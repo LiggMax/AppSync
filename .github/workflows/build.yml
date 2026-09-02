@@ -1,0 +1,43 @@
+name: Build AppSync Unified
+
+on:
+  push:
+    branches:
+      - ios18.7.1
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build packages
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Theos
+        uses: waruhachi/theos-action@v2.4.6
+        with:
+          theos-src: theos/theos
+          theos-branch: master
+          sdks-src: theos/sdks
+          sdks-branch: master
+
+      - name: Build rootful package
+        run: make clean package FINALPACKAGE=1
+
+      - name: Build rootless package
+        run: make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+
+      - name: Upload Debian packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppSync-${{ github.sha }}
+          path: debs/*.deb
+          if-no-files-found: error
+          retention-days: 14
